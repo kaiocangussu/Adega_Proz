@@ -330,3 +330,69 @@ button[type="submit"]:hover {
 #tabelaProdutos td:last-child {
     white-space: nowrap;
 }
+
+/* ======================================
+   IMAGENS NA ADMINISTRAÇÃO
+====================================== */
+
+.campo-imagem {
+    margin: 15px 0;
+}
+
+.campo-imagem input {
+    display: block;
+    margin-top: 8px;
+    max-width: 100%;
+}
+
+.preview-container {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px dashed #999;
+    border-radius: 10px;
+    text-align: center;
+}
+
+#previewImagem {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 10px;
+    margin: auto;
+}
+
+#textoPreview {
+    color: #777;
+}
+
+.foto-produto-admin {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.tabela-container {
+    overflow-x: auto;
+}
+
+#tabelaProdutos {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#tabelaProdutos th,
+#tabelaProdutos td {
+    padding: 10px;
+    text-align: center;
+}
+
+#tabelaProdutos button {
+    margin: 3px;
+}
+
+@media (max-width: 600px) {
+    #tabelaProdutos {
+        min-width: 600px;
+    }
+}

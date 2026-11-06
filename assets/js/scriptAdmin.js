@@ -1,116 +1,304 @@
 
 // ======================================
 // ADEGA DE MOC - ADMINISTRAÇÃO
-// Cadastro, edição e exclusão de produtos
+// Cadastro, edição, imagens e exclusão
 // ======================================
 
-// ELEMENTOS DO HTML
 const formCadastro = document.getElementById("formCadastro");
 const listaProdutos = document.getElementById("itens");
 
-// Controle de edição
-let isEditando = null;
+const campoImagem = document.getElementById("imagemProduto");
+const previewImagem = document.getElementById("previewImagem");
+const textoPreview = document.getElementById("textoPreview");
 
-// Recuperar produtos do LocalStorage
+let isEditando = null;
+let imagemSelecionada = null;
+
+// ======================================
+// LOCAL STORAGE
+// ======================================
+
 function obterProdutos() {
-    return JSON.parse(localStorage.getItem("Produtos")) || [];
+    try {
+        return JSON.parse(localStorage.getItem("Produtos")) || [];
+    } catch {
+        return [];
+    }
 }
 
-// Salvar produtos no LocalStorage
 function salvarProdutos(produtos) {
     localStorage.setItem("Produtos", JSON.stringify(produtos));
 }
 
 // ======================================
-// CADASTRAR E EDITAR PRODUTOS
+// COMPRIMIR IMAGEM
 // ======================================
 
-formCadastro.onsubmit = (event) => {
+function comprimirImagem(arquivo) {
+
+    return new Promise((resolve, reject) => {
+
+        if (!arquivo.type.startsWith("image/")) {
+            reject(new Error("Selecione um arquivo de imagem."));
+            return;
+        }
+
+        if (arquivo.size > 8 * 1024 * 1024) {
+            reject(new Error("A imagem deve ter no máximo 8 MB."));
+            return;
+        }
+
+        const leitor = new FileReader();
+
+        leitor.onload = () => {
+
+            const imagem = new Image();
+
+            imagem.onload = () => {
+
+                const tamanhoMaximo = 800;
+
+                let largura = imagem.width;
+                let altura = imagem.height;
+
+                if (largura > tamanhoMaximo || altura > tamanhoMaximo) {
+
+                    const proporcao = Math.min(
+                        tamanhoMaximo / largura,
+                        tamanhoMaximo / altura
+                    );
+
+                    largura = Math.round(largura * proporcao);
+                    altura = Math.round(altura * proporcao);
+                }
+
+                const canvas = document.createElement("canvas");
+
+                canvas.width = largura;
+                canvas.height = altura;
+
+                const contexto = canvas.getContext("2d");
+
+                contexto.fillStyle = "#ffffff";
+                contexto.fillRect(0, 0, largura, altura);
+
+                contexto.drawImage(
+                    imagem,
+                    0,
+                    0,
+                    largura,
+                    altura
+                );
+
+                const imagemFinal = canvas.toDataURL(
+                    "image/jpeg",
+                    0.75
+                );
+
+                resolve(imagemFinal);
+            };
+
+            imagem.onerror = () => {
+                reject(new Error("Não foi possível carregar a imagem."));
+            };
+
+            imagem.src = leitor.result;
+        };
+
+        leitor.onerror = () => {
+            reject(new Error("Erro ao ler o arquivo."));
+        };
+
+        leitor.readAsDataURL(arquivo);
+    });
+}
+
+// ======================================
+// PRÉ-VISUALIZAÇÃO
+// ======================================
+
+campoImagem.addEventListener("change", async () => {
+
+    const arquivo = campoImagem.files[0];
+
+    if (!arquivo) return;
+
+    try {
+
+        imagemSelecionada = await comprimirImagem(arquivo);
+
+        previewImagem.src = imagemSelecionada;
+        previewImagem.style.display = "block";
+
+        textoPreview.style.display = "none";
+
+    } catch (erro) {
+
+        alert(erro.message);
+
+        campoImagem.value = "";
+        imagemSelecionada = null;
+    }
+});
+
+// ======================================
+// LIMPAR FORMULÁRIO
+// ======================================
+
+formCadastro.addEventListener("reset", () => {
+
+    isEditando = null;
+    imagemSelecionada = null;
+
+    campoImagem.value = "";
+
+    previewImagem.src = "";
+    previewImagem.style.display = "none";
+
+    textoPreview.style.display = "block";
+});
+
+// ======================================
+// CADASTRAR E EDITAR
+// ======================================
+
+formCadastro.addEventListener("submit", async (event) => {
+
     event.preventDefault();
 
-    // Pegar valores do formulário
-    const nomeProdutoDigitado =
-        document.getElementById("nome").value.trim();
+    const nome = document.getElementById("nome").value.trim();
 
-    const precoProdutoDigitado =
-        Number(document.getElementById("preco").value.replace(",", "."));
+    const preco = Number(
+        document.getElementById("preco").value
+            .replace(",", ".")
+            .replace(/[^\d.]/g, "")
+    );
 
-    const categoriaProdutoDigitado =
-        document.getElementById("categoria").value.trim();
+    const categoria = document.getElementById("categoria").value.trim();
 
-    // Validar campos
     if (
-        !nomeProdutoDigitado ||
-        !categoriaProdutoDigitado ||
-        !Number.isFinite(precoProdutoDigitado) ||
-        precoProdutoDigitado <= 0
+        !nome ||
+        !categoria ||
+        !Number.isFinite(preco) ||
+        preco <= 0
     ) {
         alert("Preencha todos os campos corretamente!");
         return;
     }
 
-    // Criar objeto do produto
-    const produto = {
-        nome: nomeProdutoDigitado,
-        preco: precoProdutoDigitado,
-        categoria: categoriaProdutoDigitado
-    };
+    const produtos = obterProdutos();
 
-    // Recuperar produtos
-    const produtosLocalStorage = obterProdutos();
+    const produtoAnterior = isEditando !== null
+        ? produtos[isEditando]
+        : null;
 
-    // Verificar se está editando ou cadastrando
-    if (isEditando !== null) {
-        produtosLocalStorage[isEditando] = produto;
-    } else {
-        produtosLocalStorage.push(produto);
+    // Preservar imagem anterior quando não houver nova seleção
+    let imagem = produtoAnterior?.imagem || "";
+
+    // Converter nova imagem, caso tenha sido selecionada
+    if (campoImagem.files.length > 0) {
+
+        try {
+
+            imagem = imagemSelecionada ||
+                await comprimirImagem(campoImagem.files[0]);
+
+        } catch (erro) {
+
+            alert(erro.message);
+            return;
+        }
     }
 
-    // Salvar alterações
-    salvarProdutos(produtosLocalStorage);
+    const produto = {
+        nome,
+        preco,
+        categoria,
+        imagem
+    };
 
-    // Limpar formulário e atualizar tabela
-    formCadastro.reset();
-    isEditando = null;
+    if (isEditando !== null) {
 
-    carregarProdutos();
+        produtos[isEditando] = produto;
 
-    alert("Produto salvo com sucesso!");
-};
+    } else {
+
+        produtos.push(produto);
+    }
+
+    try {
+
+        salvarProdutos(produtos);
+
+        alert("Produto salvo com sucesso!");
+
+        formCadastro.reset();
+
+        carregarProdutos();
+
+    } catch (erro) {
+
+        alert(
+            "Não foi possível salvar o produto. " +
+            "O armazenamento pode estar cheio. " +
+            "Tente utilizar uma imagem menor."
+        );
+    }
+});
 
 // ======================================
-// CARREGAR PRODUTOS NA TABELA
+// CARREGAR TABELA
 // ======================================
 
 function carregarProdutos() {
 
-    const produtosLocalStorage = obterProdutos();
+    const produtos = obterProdutos();
 
-    // Limpar tabela
     listaProdutos.innerHTML = "";
 
-    // Verificar se existem produtos
-    if (produtosLocalStorage.length === 0) {
+    if (produtos.length === 0) {
+
         listaProdutos.innerHTML = `
             <tr>
-                <td colspan="4">
+                <td colspan="5">
                     Nenhum produto cadastrado.
                 </td>
             </tr>
         `;
+
         return;
     }
 
-    // Criar linhas da tabela
-    produtosLocalStorage.forEach((produto, index) => {
+    produtos.forEach((produto, index) => {
 
         const linha = document.createElement("tr");
 
-        const nome = document.createElement("td");
-        nome.textContent = produto.nome;
+        // Foto
+        const colunaImagem = document.createElement("td");
 
-        const preco = document.createElement("td");
-        preco.textContent = Number(produto.preco).toLocaleString(
+        if (produto.imagem) {
+
+            const foto = document.createElement("img");
+
+            foto.src = produto.imagem;
+            foto.alt = produto.nome;
+            foto.className = "foto-produto-admin";
+
+            colunaImagem.appendChild(foto);
+
+        } else {
+
+            colunaImagem.textContent = "Sem foto";
+        }
+
+        // Nome
+        const colunaNome = document.createElement("td");
+        colunaNome.textContent = produto.nome;
+
+        // Preço
+        const colunaPreco = document.createElement("td");
+
+        colunaPreco.textContent = Number(produto.preco).toLocaleString(
             "pt-BR",
             {
                 style: "currency",
@@ -118,38 +306,79 @@ function carregarProdutos() {
             }
         );
 
-        const categoria = document.createElement("td");
-        categoria.textContent = produto.categoria;
+        // Categoria
+        const colunaCategoria = document.createElement("td");
+        colunaCategoria.textContent = produto.categoria;
 
-        const acoes = document.createElement("td");
+        // Ações
+        const colunaAcoes = document.createElement("td");
 
-        // Botão editar
         const botaoEditar = document.createElement("button");
+
         botaoEditar.textContent = "Editar";
         botaoEditar.type = "button";
         botaoEditar.className = "btn-editar";
 
         botaoEditar.onclick = () => editarProduto(index);
 
-        // Botão excluir
         const botaoExcluir = document.createElement("button");
+
         botaoExcluir.textContent = "Excluir";
         botaoExcluir.type = "button";
         botaoExcluir.className = "btn-excluir";
 
         botaoExcluir.onclick = () => excluirProduto(index);
 
-        acoes.appendChild(botaoEditar);
-        acoes.appendChild(botaoExcluir);
+        colunaAcoes.appendChild(botaoEditar);
+        colunaAcoes.appendChild(botaoExcluir);
 
-        // Adicionar células à linha
-        linha.appendChild(nome);
-        linha.appendChild(preco);
-        linha.appendChild(categoria);
-        linha.appendChild(acoes);
+        linha.appendChild(colunaImagem);
+        linha.appendChild(colunaNome);
+        linha.appendChild(colunaPreco);
+        linha.appendChild(colunaCategoria);
+        linha.appendChild(colunaAcoes);
 
-        // Adicionar linha à tabela
         listaProdutos.appendChild(linha);
+    });
+}
+
+// ======================================
+// EDITAR PRODUTO
+// ======================================
+
+function editarProduto(index) {
+
+    const produtos = obterProdutos();
+
+    const produto = produtos[index];
+
+    if (!produto) return;
+
+    document.getElementById("nome").value = produto.nome;
+    document.getElementById("preco").value = produto.preco;
+    document.getElementById("categoria").value = produto.categoria;
+
+    isEditando = index;
+    imagemSelecionada = null;
+
+    campoImagem.value = "";
+
+    if (produto.imagem) {
+
+        previewImagem.src = produto.imagem;
+        previewImagem.style.display = "block";
+
+        textoPreview.style.display = "none";
+
+    } else {
+
+        previewImagem.style.display = "none";
+        textoPreview.style.display = "block";
+    }
+
+    formCadastro.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
     });
 }
 
@@ -159,56 +388,30 @@ function carregarProdutos() {
 
 function excluirProduto(index) {
 
-    const confirmar = confirm(
-        "Tem certeza que deseja excluir este produto?"
-    );
+    if (!confirm("Tem certeza que deseja excluir este produto?")) {
+        return;
+    }
 
-    if (!confirmar) return;
+    const produtos = obterProdutos();
 
-    const produtosLocalStorage = obterProdutos();
+    produtos.splice(index, 1);
 
-    produtosLocalStorage.splice(index, 1);
+    salvarProdutos(produtos);
 
-    salvarProdutos(produtosLocalStorage);
-
-    carregarProdutos();
-
-    // Cancelar edição caso o produto editado tenha sido excluído
     if (isEditando === index) {
-        isEditando = null;
+
         formCadastro.reset();
+
     } else if (isEditando !== null && isEditando > index) {
+
         isEditando--;
     }
+
+    carregarProdutos();
 }
 
 // ======================================
-// EDITAR PRODUTO
-// ======================================
-
-function editarProduto(index) {
-
-    const produtosLocalStorage = obterProdutos();
-
-    const produto = produtosLocalStorage[index];
-
-    if (!produto) return;
-
-    document.getElementById("nome").value = produto.nome;
-    document.getElementById("preco").value = produto.preco;
-    document.getElementById("categoria").value = produto.categoria;
-
-    // Permite editar inclusive o índice 0
-    isEditando = index;
-
-    formCadastro.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
-}
-
-// ======================================
-// INICIALIZAR TABELA
+// INICIALIZAR
 // ======================================
 
 carregarProdutos();
