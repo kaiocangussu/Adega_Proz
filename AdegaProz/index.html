@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Adega de Moc</title>
+
+    <link rel="stylesheet" href="assets/css/index.css">
+</head>
+
+<body>
+
+    <!-- CABEÇALHO -->
+    <header>
+        <div class="logo-adega">
+            <h1>ADEGA DE MOC</h1>
+            <p>BEBIDAS • QUALIDADE • EXPERIÊNCIA</p>
+        </div>
+    </header>
+
+    <!-- NAVEGAÇÃO -->
+    <nav class="navegacao">
+        <a href="index.html" class="nav-btn ativo">
+            🏠 Início da Loja
+        </a>
+
+        <a href="admin.html" class="nav-btn">
+            ⚙️ Administração
+        </a>
+    </nav>
+
+    <!-- BANNER -->
+    <section class="banner">
+        <h2>Bem-vindo à Adega de Moc!</h2>
+        <p>Encontre suas bebidas favoritas em um só lugar.</p>
+    </section>
+
+    <!-- PESQUISA -->
+    <div class="pesquisa">
+        <input
+            type="text"
+            id="pesquisaProduto"
+            placeholder="Pesquisar bebidas..."
+        >
+    </div>
+
+    <!-- CATÁLOGO -->
+    <main>
+
+        <h2>Nosso Catálogo</h2>
+
+        <div class="categorias">
+            <button class="categoria">Todos</button>
+            <button class="categoria">Vinhos</button>
+            <button class="categoria">Cervejas</button>
+            <button class="categoria">Destilados</button>
+            <button class="categoria">Outras bebidas</button>
+        </div>
+
+        <!-- PRODUTOS CADASTRADOS -->
+        <div id="lista-produtos" class="produtos">
+
+            <article class="produto">
+                <h3>Arroz 5kg</h3>
+                <p>Categoria: Mercearia</p>
+                <div class="preco">R$ 24,90</div>
+                <button class="btn-comprar">
+                    Adicionar ao carrinho
+                </button>
+            </article>
+
+        </div>
+
+        <!-- CARRINHO -->
+        <section class="carrinho">
+            <h2>🛒 Meu Carrinho</h2>
+            <p>Seu carrinho está vazio.</p>
+        </section>
+
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer>
+        <p>© 2026 Adega de Moc - Todos os direitos reservados.</p>
+        <p>Venda de bebidas alcoólicas proibida para menores de 18 anos.</p>
+    </footer>
+
+    <script src="assets/js/scriptIndex.js"></script>
+
+</body>
+</html>
