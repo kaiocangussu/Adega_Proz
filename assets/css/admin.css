@@ -396,3 +396,11 @@ button[type="submit"]:hover {
         min-width: 600px;
     }
 }
+
+.foto-produto-admin {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    display: block;
+    margin: auto;
+}

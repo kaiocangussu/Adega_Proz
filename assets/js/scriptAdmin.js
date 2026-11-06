@@ -56,7 +56,7 @@ function comprimirImagem(arquivo) {
 
             imagem.onload = () => {
 
-                const tamanhoMaximo = 800;
+                const tamanhoMaximo = 500;
 
                 let largura = imagem.width;
                 let altura = imagem.height;
@@ -92,7 +92,7 @@ function comprimirImagem(arquivo) {
 
                 const imagemFinal = canvas.toDataURL(
                     "image/jpeg",
-                    0.75
+                    0.60
                 );
 
                 resolve(imagemFinal);
